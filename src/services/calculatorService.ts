@@ -13,18 +13,17 @@ export const GradeCalculatorService = {
     hasDecimal: boolean,
     inputMode: 'grade' | 'weight'
   ): boolean => {
-    // Regla 1: El 0 nunca se agrega
-    if (number === '0') return false;
-
-    // Si es modo peso, permitir todos los números
+    // Si es modo peso, permitir todos los números (incluido el 0)
     if (inputMode === 'weight') {
       // No permitir más de 3 dígitos (máximo 100%)
       if (currentInput.length >= 3) return false;
       return true;
     }
 
-    // Modo nota (grade)
-    const isEmpty = currentInput === '';
+    // Modo nota (grade) - Aplicar reglas chilenas
+    
+    // Regla 1: El 0 nunca se agrega en modo nota
+    if (number === '0') return false;
 
     // Regla 2: 8 y 9 solo después de la coma
     if ((number === '8' || number === '9') && !hasDecimal) {
