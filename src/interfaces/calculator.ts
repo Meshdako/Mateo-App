@@ -1,5 +1,7 @@
 export type ButtonType = 'number' | 'decimal' | 'add' | 'delete' | 'help';
 
+export type WeightEntryMode = 'integer' | 'decimal';
+
 export interface GradeButton {
   label: string;
   type: ButtonType;
@@ -16,7 +18,7 @@ export interface Grade {
 export interface GradeCalculatorState {
   currentInput: string;
   inputMode: 'grade' | 'weight';
+  /** Solo aplica cuando inputMode === 'weight': enteros (25) o un decimal tipo 25,5 % */
+  weightEntryMode: WeightEntryMode;
   grades: Grade[];
-  isKeyboardBlocked: boolean;
-  hasDecimal: boolean;
 }

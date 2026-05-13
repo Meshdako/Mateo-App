@@ -1,9 +1,7 @@
 import { GradeButton } from '../interfaces';
 
-/**
- * Configuración de los botones de la calculadora de notas chilenas
- */
-export const GRADE_CALCULATOR_BUTTONS: GradeButton[][] = [
+/** Filas 7–9, 4–6, 1–3 (borrar y cero se arman en la vista según modo). */
+export const GRADE_NUMERIC_ROWS: GradeButton[][] = [
   [
     { label: '7', type: 'number', value: '7' },
     { label: '8', type: 'number', value: '8' },
@@ -19,16 +17,8 @@ export const GRADE_CALCULATOR_BUTTONS: GradeButton[][] = [
     { label: '2', type: 'number', value: '2' },
     { label: '3', type: 'number', value: '3' },
   ],
-  [
-    { label: ',', type: 'decimal', value: '.' },
-    { label: '0', type: 'number', value: '0' },
-    { label: '←', type: 'delete', value: 'delete' },
-  ],
 ];
 
-/**
- * Botones de acción
- */
 export const ACTION_BUTTONS: GradeButton[] = [
   { label: '+', type: 'add', value: 'add' },
   { label: '?', type: 'help', value: 'help' },
