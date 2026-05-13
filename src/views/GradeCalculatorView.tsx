@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -7,43 +7,55 @@ import {
   TouchableOpacity,
   Platform,
   useWindowDimensions,
-} from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { GradeButton, GradeDisplay, GradesList } from '../components';
-import GradeGlowValue from '../components/grades/GradeGlowValue';
+} from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { GradeButton, GradeDisplay, GradesList } from "../components";
+import GradeGlowValue from "../components/grades/GradeGlowValue";
 import {
   GradeCalculatorState,
   Grade,
   ButtonType,
   WeightEntryMode,
-} from '../interfaces';
-import { GradeCalculatorService } from '../services';
-import { GRADE_NUMERIC_ROWS, ACTION_BUTTONS, FONT_CALDSTONE_SEMIBOLD } from '../constants';
+} from "../interfaces";
+import { GradeCalculatorService } from "../services";
+import {
+  GRADE_NUMERIC_ROWS,
+  ACTION_BUTTONS,
+  FONT_CALDSTONE_SEMIBOLD,
+} from "../constants";
 
 const fontApp = { fontFamily: FONT_CALDSTONE_SEMIBOLD };
 
 const initialState: GradeCalculatorState = {
-  currentInput: '',
-  inputMode: 'grade',
-  weightEntryMode: 'integer',
+  currentInput: "",
+  inputMode: "grade",
+  weightEntryMode: "integer",
   grades: [],
 };
 
 export default function GradeCalculatorView() {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const useSplitLayout = width >= 600;
   const [state, setState] = useState<GradeCalculatorState>(initialState);
   const [tempGrade, setTempGrade] = useState<number | null>(null);
   /** Si no es null, el próximo «+» en peso actualiza esa fila en lugar de crear una nueva. */
   const [editingGradeId, setEditingGradeId] = useState<string | null>(null);
   /** Aviso visible (p. ej. en web `Alert` no siempre se ve). */
-  const [weightBudgetError, setWeightBudgetError] = useState<string | null>(null);
+  const [weightBudgetError, setWeightBudgetError] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     setWeightBudgetError(null);
   }, [state.currentInput, state.inputMode, state.weightEntryMode]);
 
-  const weightedAverage = GradeCalculatorService.calculateWeightedAverage(state.grades);
+  const weightedAverage = GradeCalculatorService.calculateWeightedAverage(
+    state.grades,
+  );
 
   const weightOkForFinal = useMemo(() => {
     if (state.grades.length === 0) return true;
@@ -52,14 +64,15 @@ export default function GradeCalculatorView() {
   }, [state.grades]);
 
   const displayInput =
-    state.inputMode === 'grade'
+    state.inputMode === "grade"
       ? GradeCalculatorService.getGradeDisplayFromBuffer(state.currentInput)
-      : state.weightEntryMode === 'decimal'
+      : state.weightEntryMode === "decimal"
         ? GradeCalculatorService.getWeightDisplayFromBuffer(state.currentInput)
         : state.currentInput;
 
-  const showWeightKeypad = state.inputMode === 'weight';
-  const showWeightModeToggle = state.inputMode === 'weight' && tempGrade !== null;
+  const showWeightKeypad = state.inputMode === "weight";
+  const showWeightModeToggle =
+    state.inputMode === "weight" && tempGrade !== null;
 
   /**
    * Tamaño de teclas **solo** desde ventana + insets (sin `onLayout`).
@@ -103,17 +116,27 @@ export default function GradeCalculatorView() {
     const innerVerticalPad = 8;
     const maxFromHeight = Math.floor((splitH - innerVerticalPad) / rows - gap);
 
-    let keySize = Math.min(74, Math.max(0, maxFromWidth), Math.max(0, maxFromHeight));
+    let keySize = Math.min(
+      74,
+      Math.max(0, maxFromWidth),
+      Math.max(0, maxFromHeight),
+    );
     keySize = Math.max(24, keySize);
 
     while (keySize > 24 && rowWidthForKeys(keySize) > colW) {
       keySize -= 1;
     }
-    while (keySize > 24 && rows * rowHeightForKeys(keySize) > splitH - innerVerticalPad) {
+    while (
+      keySize > 24 &&
+      rows * rowHeightForKeys(keySize) > splitH - innerVerticalPad
+    ) {
       keySize -= 1;
     }
 
-    const actionBtnHeight = Math.max(32, Math.min(52, Math.round(keySize * 0.64)));
+    const actionBtnHeight = Math.max(
+      32,
+      Math.min(52, Math.round(keySize * 0.64)),
+    );
     const actionBtnWidth = Math.min(148, Math.max(72, (inner - gap * 2) / 2));
 
     return { keySize, keyGap: gap, actionBtnWidth, actionBtnHeight };
@@ -125,7 +148,7 @@ export default function GradeCalculatorView() {
         prev.currentInput,
         number,
         prev.inputMode,
-        prev.weightEntryMode
+        prev.weightEntryMode,
       );
 
       if (!canAdd) {
@@ -141,10 +164,12 @@ export default function GradeCalculatorView() {
 
   const handleWeightDecimalSeparatorPress = useCallback(() => {
     setState((prev) => {
-      if (prev.inputMode !== 'weight' || prev.weightEntryMode !== 'decimal') {
+      if (prev.inputMode !== "weight" || prev.weightEntryMode !== "decimal") {
         return prev;
       }
-      if (!GradeCalculatorService.canAddWeightDecimalSeparator(prev.currentInput)) {
+      if (
+        !GradeCalculatorService.canAddWeightDecimalSeparator(prev.currentInput)
+      ) {
         return prev;
       }
       return {
@@ -156,20 +181,20 @@ export default function GradeCalculatorView() {
 
   const setWeightEntryMode = useCallback((mode: WeightEntryMode) => {
     setState((prev) => {
-      if (prev.inputMode !== 'weight') return prev;
+      if (prev.inputMode !== "weight") return prev;
       if (prev.weightEntryMode === mode) return prev;
       return {
         ...prev,
         weightEntryMode: mode,
-        currentInput: '',
+        currentInput: "",
       };
     });
   }, []);
 
   const handleDeletePress = useCallback(() => {
     setState((prev) => {
-      if (prev.currentInput === '') {
-        Alert.alert('Error', 'No hay números para borrar');
+      if (prev.currentInput === "") {
+        Alert.alert("Error", "No hay números para borrar");
         return prev;
       }
 
@@ -181,17 +206,19 @@ export default function GradeCalculatorView() {
   }, []);
 
   const handleAddPress = useCallback(() => {
-    if (state.currentInput === '') {
-      Alert.alert('Error', 'Debes ingresar un valor');
+    if (state.currentInput === "") {
+      Alert.alert("Error", "Debes ingresar un valor");
       return;
     }
 
-    if (state.inputMode === 'grade') {
-      const formattedGrade = GradeCalculatorService.formatGrade(state.currentInput);
+    if (state.inputMode === "grade") {
+      const formattedGrade = GradeCalculatorService.formatGrade(
+        state.currentInput,
+      );
       const gradeValue = parseFloat(formattedGrade);
 
       if (!GradeCalculatorService.isValidGrade(gradeValue)) {
-        Alert.alert('Error', 'La nota debe estar entre 1.0 y 7.0');
+        Alert.alert("Error", "La nota debe estar entre 1.0 y 7.0");
         return;
       }
 
@@ -208,39 +235,42 @@ export default function GradeCalculatorView() {
             return {
               ...prev,
               currentInput: wBuf,
-              inputMode: 'weight',
-              weightEntryMode: isInt ? 'integer' : 'decimal',
+              inputMode: "weight",
+              weightEntryMode: isInt ? "integer" : "decimal",
             };
           }
         }
         return {
           ...prev,
-          currentInput: '',
-          inputMode: 'weight',
-          weightEntryMode: 'integer',
+          currentInput: "",
+          inputMode: "weight",
+          weightEntryMode: "integer",
         };
       });
       return;
     }
 
-    if (state.inputMode === 'weight' && tempGrade !== null) {
+    if (state.inputMode === "weight" && tempGrade !== null) {
       const weightValue = GradeCalculatorService.parseWeightInput(
         state.currentInput,
-        state.weightEntryMode
+        state.weightEntryMode,
       );
 
-      if (weightValue === null || !GradeCalculatorService.isValidWeight(weightValue)) {
+      if (
+        weightValue === null ||
+        !GradeCalculatorService.isValidWeight(weightValue)
+      ) {
         Alert.alert(
-          'Error',
-          state.weightEntryMode === 'decimal'
-            ? 'El peso debe ser mayor que 0 y como máximo 100 (ej. 25,5).'
-            : 'El peso debe ser un entero entre 1 y 100.'
+          "Error",
+          state.weightEntryMode === "decimal"
+            ? "El peso debe ser mayor que 0 y como máximo 100 (ej. 25,5)."
+            : "El peso debe ser un entero entre 1 y 100.",
         );
         return;
       }
 
       const roundedWeight =
-        state.weightEntryMode === 'decimal'
+        state.weightEntryMode === "decimal"
           ? Math.round(weightValue * 10) / 10
           : weightValue;
 
@@ -248,20 +278,20 @@ export default function GradeCalculatorView() {
         GradeCalculatorService.wouldExceedTotalWeightPercent(
           state.grades,
           roundedWeight,
-          editingGradeId ?? undefined
+          editingGradeId ?? undefined,
         )
       ) {
         const currentTotal = GradeCalculatorService.getTotalWeightPercent(
           editingGradeId
             ? state.grades.filter((g) => g.id !== editingGradeId)
-            : state.grades
+            : state.grades,
         );
-        const dec = state.weightEntryMode === 'decimal' ? 1 : 0;
+        const dec = state.weightEntryMode === "decimal" ? 1 : 0;
         const msg =
           `Los pesos ya suman ${currentTotal.toFixed(1)} %. Con ${roundedWeight.toFixed(dec)} % pasarías del 100 % total. ` +
-          'Reduce el peso de esta nota o revisa las filas anteriores.';
+          "Reduce el peso de esta nota o revisa las filas anteriores.";
         setWeightBudgetError(msg);
-        Alert.alert('Supera el 100 %', msg);
+        Alert.alert("Supera el 100 %", msg);
         return;
       }
 
@@ -270,13 +300,18 @@ export default function GradeCalculatorView() {
       if (editingGradeId !== null) {
         setState((prev) => ({
           ...prev,
-          currentInput: '',
-          inputMode: 'grade',
-          weightEntryMode: 'integer',
+          currentInput: "",
+          inputMode: "grade",
+          weightEntryMode: "integer",
           grades: prev.grades.map((g) =>
             g.id === editingGradeId
-              ? { ...g, grade: tempGrade, weight: roundedWeight, timestamp: Date.now() }
-              : g
+              ? {
+                  ...g,
+                  grade: tempGrade,
+                  weight: roundedWeight,
+                  timestamp: Date.now(),
+                }
+              : g,
           ),
         }));
         setEditingGradeId(null);
@@ -293,9 +328,9 @@ export default function GradeCalculatorView() {
 
       setState((prev) => ({
         ...prev,
-        currentInput: '',
-        inputMode: 'grade',
-        weightEntryMode: 'integer',
+        currentInput: "",
+        inputMode: "grade",
+        weightEntryMode: "integer",
         grades: [...prev.grades, newGrade],
       }));
 
@@ -319,34 +354,38 @@ export default function GradeCalculatorView() {
       setEditingGradeId((cur) => (cur === id ? null : cur));
     };
 
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       const ok =
-        typeof globalThis !== 'undefined' &&
-        typeof (globalThis as { confirm?: (message?: string) => boolean }).confirm ===
-          'function' &&
+        typeof globalThis !== "undefined" &&
+        typeof (globalThis as { confirm?: (message?: string) => boolean })
+          .confirm === "function" &&
         (globalThis as { confirm: (message?: string) => boolean }).confirm(
-          '¿Eliminar esta nota?'
+          "¿Eliminar esta nota?",
         );
       if (ok) runDelete();
       return;
     }
 
-    Alert.alert('Eliminar nota', '¿Estás seguro de que quieres eliminar esta nota?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: runDelete,
-      },
-    ]);
+    Alert.alert(
+      "Eliminar nota",
+      "¿Estás seguro de que quieres eliminar esta nota?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: runDelete,
+        },
+      ],
+    );
   }, []);
 
   const handleStartEdit = useCallback(
     (id: string) => {
       if (tempGrade !== null && editingGradeId === null) {
         Alert.alert(
-          'Espera',
-          'Estás agregando una nueva nota. Confirma el peso con + antes de editar una fila de la lista.'
+          "Espera",
+          "Estás agregando una nueva nota. Confirma el peso con + antes de editar una fila de la lista.",
         );
         return;
       }
@@ -357,12 +396,12 @@ export default function GradeCalculatorView() {
       setTempGrade(null);
       setState((prev) => ({
         ...prev,
-        inputMode: 'grade',
-        weightEntryMode: 'integer',
+        inputMode: "grade",
+        weightEntryMode: "integer",
         currentInput: GradeCalculatorService.gradeToInputBuffer(row.grade),
       }));
     },
-    [state.grades, tempGrade, editingGradeId]
+    [state.grades, tempGrade, editingGradeId],
   );
 
   const handleCancelEdit = useCallback(() => {
@@ -371,41 +410,41 @@ export default function GradeCalculatorView() {
     setWeightBudgetError(null);
     setState((prev) => ({
       ...prev,
-      currentInput: '',
-      inputMode: 'grade',
-      weightEntryMode: 'integer',
+      currentInput: "",
+      inputMode: "grade",
+      weightEntryMode: "integer",
     }));
   }, []);
 
   const handleHelpPress = useCallback(() => {
     Alert.alert(
-      'Ayuda - Sistema de Notas Chileno',
-      'Nota: primer dígito 1–7; un segundo dígito opcional forma la décima (ej. 5 y 8 → 5,8). El 7 no admite más cifras.\n\n' +
-        'Peso (%):\n' +
-        '• Enteros: números y 0 (ej. 30, 100).\n' +
-        '• Con decimal: en la última fila, 0, coma (,) y borrar; un solo decimal (ej. 25,5 %).\n' +
-        'El botón + está arriba del teclado para que siempre lo veas.\n\n' +
-        '+ confirma el peso y guarda la fila.\n\n' +
-        'La suma de todos los pesos no puede pasar de 100 %; si ocurre, revisa esta fila o las anteriores.'
+      "Ayuda - Sistema de Notas Chileno",
+      "Nota: primer dígito 1–7; un segundo dígito opcional forma la décima (ej. 5 y 8 → 5,8). El 7 no admite más cifras.\n\n" +
+        "Peso (%):\n" +
+        "• Enteros: números y 0 (ej. 30, 100).\n" +
+        "• Con decimal: en la última fila, 0, coma (,) y borrar; un solo decimal (ej. 25,5 %).\n" +
+        "El botón + está arriba del teclado para que siempre lo veas.\n\n" +
+        "+ confirma el peso y guarda la fila.\n\n" +
+        "La suma de todos los pesos no puede pasar de 100 %; si ocurre, revisa esta fila o las anteriores.",
     );
   }, []);
 
   const handlePress = useCallback(
     (value: string, type: ButtonType) => {
       switch (type) {
-        case 'number':
+        case "number":
           handleNumberPress(value);
           break;
-        case 'decimal':
+        case "decimal":
           handleWeightDecimalSeparatorPress();
           break;
-        case 'delete':
+        case "delete":
           handleDeletePress();
           break;
-        case 'add':
+        case "add":
           handleAddPress();
           break;
-        case 'help':
+        case "help":
           handleHelpPress();
           break;
       }
@@ -416,22 +455,22 @@ export default function GradeCalculatorView() {
       handleDeletePress,
       handleAddPress,
       handleHelpPress,
-    ]
+    ],
   );
 
   const isButtonDisabled = (value: string, type: ButtonType): boolean => {
-    if (type === 'number') {
+    if (type === "number") {
       return !GradeCalculatorService.canAddNumber(
         state.currentInput,
         value,
         state.inputMode,
-        state.weightEntryMode
+        state.weightEntryMode,
       );
     }
-    if (type === 'decimal') {
+    if (type === "decimal") {
       return (
-        state.inputMode !== 'weight' ||
-        state.weightEntryMode !== 'decimal' ||
+        state.inputMode !== "weight" ||
+        state.weightEntryMode !== "decimal" ||
         !GradeCalculatorService.canAddWeightDecimalSeparator(state.currentInput)
       );
     }
@@ -439,19 +478,27 @@ export default function GradeCalculatorView() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']}>
+    <SafeAreaView
+      style={styles.safe}
+      edges={["top", "left", "right", "bottom"]}
+    >
       <View style={styles.root}>
         <View style={styles.calculatorPanel}>
           <GradeDisplay
             value={displayInput}
             mode={state.inputMode}
-            placeholder={state.inputMode === 'grade' ? '0.0' : '0'}
-            weightEntryMode={state.inputMode === 'weight' ? state.weightEntryMode : undefined}
+            placeholder={state.inputMode === "grade" ? "0.0" : "0"}
+            weightEntryMode={
+              state.inputMode === "weight" ? state.weightEntryMode : undefined
+            }
             variant="compact"
           />
 
           {weightBudgetError !== null && (
-            <View style={styles.weightBudgetErrorBanner} accessibilityRole="alert">
+            <View
+              style={styles.weightBudgetErrorBanner}
+              accessibilityRole="alert"
+            >
               <Text style={styles.weightBudgetErrorTitle}>Supera el 100 %</Text>
               <Text style={styles.weightBudgetErrorText} numberOfLines={4}>
                 {weightBudgetError}
@@ -466,7 +513,9 @@ export default function GradeCalculatorView() {
                   <Text style={styles.editingBadge}>Editando</Text>
                 )}
                 <Text style={styles.tempGradeLabel}>Nota:</Text>
-                <Text style={styles.tempGradeValue}>{tempGrade.toFixed(1)}</Text>
+                <Text style={styles.tempGradeValue}>
+                  {tempGrade.toFixed(1)}
+                </Text>
               </View>
               {editingGradeId !== null && (
                 <TouchableOpacity
@@ -486,15 +535,17 @@ export default function GradeCalculatorView() {
               <TouchableOpacity
                 style={[
                   styles.weightModeChip,
-                  state.weightEntryMode === 'integer' && styles.weightModeChipActive,
+                  state.weightEntryMode === "integer" &&
+                    styles.weightModeChipActive,
                 ]}
-                onPress={() => setWeightEntryMode('integer')}
+                onPress={() => setWeightEntryMode("integer")}
                 activeOpacity={0.8}
               >
                 <Text
                   style={[
                     styles.weightModeChipText,
-                    state.weightEntryMode === 'integer' && styles.weightModeChipTextActive,
+                    state.weightEntryMode === "integer" &&
+                      styles.weightModeChipTextActive,
                   ]}
                 >
                   Enteros
@@ -503,15 +554,17 @@ export default function GradeCalculatorView() {
               <TouchableOpacity
                 style={[
                   styles.weightModeChip,
-                  state.weightEntryMode === 'decimal' && styles.weightModeChipActive,
+                  state.weightEntryMode === "decimal" &&
+                    styles.weightModeChipActive,
                 ]}
-                onPress={() => setWeightEntryMode('decimal')}
+                onPress={() => setWeightEntryMode("decimal")}
                 activeOpacity={0.8}
               >
                 <Text
                   style={[
                     styles.weightModeChipText,
-                    state.weightEntryMode === 'decimal' && styles.weightModeChipTextActive,
+                    state.weightEntryMode === "decimal" &&
+                      styles.weightModeChipTextActive,
                   ]}
                 >
                   Con decimal
@@ -527,13 +580,18 @@ export default function GradeCalculatorView() {
                 style={[
                   styles.actionButton,
                   { width: actionBtnWidth, height: actionBtnHeight },
-                  btn.type === 'add' && styles.addButton,
-                  btn.type === 'help' && styles.helpButton,
+                  btn.type === "add" && styles.addButton,
+                  btn.type === "help" && styles.helpButton,
                 ]}
                 onPress={() => handlePress(btn.value, btn.type)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.actionButtonText, { fontSize: actionBtnHeight * 0.42 }]}>
+                <Text
+                  style={[
+                    styles.actionButtonText,
+                    { fontSize: actionBtnHeight * 0.42 },
+                  ]}
+                >
                   {btn.label}
                 </Text>
               </TouchableOpacity>
@@ -541,8 +599,8 @@ export default function GradeCalculatorView() {
           </View>
         </View>
 
-        <View style={styles.splitRow}>
-          <View style={styles.keyboardColumn}>
+        <View style={[styles.splitRow, !useSplitLayout && styles.stackedSection]}>
+          <View style={[styles.keyboardColumn, !useSplitLayout && styles.keyboardColumnStacked]}>
             <View style={styles.keyboardContainer}>
               {GRADE_NUMERIC_ROWS.map((row, rowIndex) => (
                 <View key={rowIndex} style={styles.row}>
@@ -561,30 +619,30 @@ export default function GradeCalculatorView() {
               ))}
 
               <View style={styles.row}>
-                {showWeightKeypad && state.weightEntryMode === 'decimal' ? (
+                {showWeightKeypad && state.weightEntryMode === "decimal" ? (
                   <>
                     <GradeButton
                       label="0"
                       type="number"
                       size={keySize}
                       gap={keyGap}
-                      onPress={() => handlePress('0', 'number')}
-                      disabled={isButtonDisabled('0', 'number')}
+                      onPress={() => handlePress("0", "number")}
+                      disabled={isButtonDisabled("0", "number")}
                     />
                     <GradeButton
                       label=","
                       type="decimal"
                       size={keySize}
                       gap={keyGap}
-                      onPress={() => handlePress('.', 'decimal')}
-                      disabled={isButtonDisabled('.', 'decimal')}
+                      onPress={() => handlePress(".", "decimal")}
+                      disabled={isButtonDisabled(".", "decimal")}
                     />
                     <GradeButton
                       label="←"
                       type="delete"
                       size={keySize}
                       gap={keyGap}
-                      onPress={() => handlePress('delete', 'delete')}
+                      onPress={() => handlePress("delete", "delete")}
                       disabled={false}
                     />
                   </>
@@ -595,15 +653,15 @@ export default function GradeCalculatorView() {
                       type="number"
                       size={keySize}
                       gap={keyGap}
-                      onPress={() => handlePress('0', 'number')}
-                      disabled={isButtonDisabled('0', 'number')}
+                      onPress={() => handlePress("0", "number")}
+                      disabled={isButtonDisabled("0", "number")}
                     />
                     <GradeButton
                       label="←"
                       type="delete"
                       size={keySize}
                       gap={keyGap}
-                      onPress={() => handlePress('delete', 'delete')}
+                      onPress={() => handlePress("delete", "delete")}
                       disabled={false}
                     />
                   </>
@@ -613,7 +671,7 @@ export default function GradeCalculatorView() {
                     type="delete"
                     size={keySize}
                     gap={keyGap}
-                    onPress={() => handlePress('delete', 'delete')}
+                    onPress={() => handlePress("delete", "delete")}
                     disabled={false}
                   />
                 )}
@@ -621,20 +679,23 @@ export default function GradeCalculatorView() {
             </View>
           </View>
 
-          <View style={styles.gradesColumn}>
+          <View style={[styles.gradesColumn, !useSplitLayout && styles.gradesColumnStacked]}>
             <GradesList
               grades={state.grades}
               onDeleteGrade={handleDeleteGrade}
               onEditGrade={handleStartEdit}
               weightedAverage={weightedAverage}
-              embedded
+              embedded={useSplitLayout}
             />
           </View>
         </View>
 
         <View style={styles.finalAverageBar}>
           <Text style={styles.finalAverageLabel}>Nota final (ponderada)</Text>
-          <GradeGlowValue grade={weightedAverage} style={styles.finalAverageValue}>
+          <GradeGlowValue
+            grade={weightedAverage}
+            style={styles.finalAverageValue}
+          >
             {weightedAverage.toFixed(2)}
           </GradeGlowValue>
           {state.grades.length > 0 && !weightOkForFinal && (
@@ -649,7 +710,7 @@ export default function GradeCalculatorView() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: "#000000",
   },
   root: {
     flex: 1,
@@ -667,47 +728,47 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 6,
-    backgroundColor: '#5D1A1A',
+    backgroundColor: "#5D1A1A",
     borderWidth: 1,
-    borderColor: '#E53935',
+    borderColor: "#E53935",
   },
   weightBudgetErrorTitle: {
     ...fontApp,
-    color: '#FFCDD2',
+    color: "#FFCDD2",
     fontSize: 12,
     marginBottom: 2,
   },
   weightBudgetErrorText: {
     ...fontApp,
-    color: '#FFEBEE',
+    color: "#FFEBEE",
     fontSize: 12,
     lineHeight: 16,
   },
   tempGradeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: '#2196F3',
+    backgroundColor: "#2196F3",
     borderRadius: 6,
     marginBottom: 4,
     marginTop: 2,
   },
   tempGradeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flexShrink: 1,
   },
   editingBadge: {
     ...fontApp,
-    color: '#E3F2FD',
+    color: "#E3F2FD",
     fontSize: 11,
-    backgroundColor: '#1565C0',
+    backgroundColor: "#1565C0",
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginRight: 8,
   },
   cancelEditBtn: {
@@ -717,24 +778,24 @@ const styles = StyleSheet.create({
   },
   cancelEditText: {
     ...fontApp,
-    color: '#FFEB3B',
+    color: "#FFEB3B",
     fontSize: 12,
-    textDecorationLine: 'underline',
+    textDecorationLine: "underline",
   },
   tempGradeLabel: {
     ...fontApp,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 13,
     marginRight: 6,
   },
   tempGradeValue: {
     ...fontApp,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 18,
   },
   weightModeRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginBottom: 4,
     marginTop: 2,
   },
@@ -743,88 +804,100 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginHorizontal: 4,
     borderRadius: 16,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: "#2a2a2a",
     borderWidth: 1,
-    borderColor: '#444444',
+    borderColor: "#444444",
   },
   weightModeChipActive: {
-    backgroundColor: '#1565C0',
-    borderColor: '#42A5F5',
+    backgroundColor: "#1565C0",
+    borderColor: "#42A5F5",
   },
   weightModeChipText: {
     ...fontApp,
-    color: '#AAAAAA',
+    color: "#AAAAAA",
     fontSize: 12,
   },
   weightModeChipTextActive: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    flexWrap: "wrap",
     marginBottom: 4,
     marginTop: 2,
   },
   actionButton: {
     borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginHorizontal: 4,
     marginVertical: 2,
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
   addButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: "#4CAF50",
   },
   helpButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: "#2196F3",
   },
   actionButtonText: {
     ...fontApp,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   keyboardContainer: {
-    alignSelf: 'stretch',
-    width: '100%',
-    alignItems: 'center',
+    alignSelf: "stretch",
+    width: "100%",
+    alignItems: "center",
   },
   row: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'stretch',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "stretch",
+    width: "100%",
     marginBottom: 0,
   },
   splitRow: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: "row",
     minHeight: 0,
     paddingHorizontal: 16,
     paddingBottom: 4,
-    alignItems: 'stretch',
-    overflow: 'hidden',
+    alignItems: "stretch",
+    overflow: "hidden",
+  },
+  stackedSection: {
+    flexDirection: "column",
+    overflow: "visible",
   },
   keyboardColumn: {
     flex: 1,
     minWidth: 0,
     minHeight: 0,
-    justifyContent: 'flex-start',
-    alignItems: 'stretch',
+    justifyContent: "flex-start",
+    alignItems: "stretch",
     borderRightWidth: 1,
-    borderRightColor: '#2a2a2a',
-    overflow: 'hidden',
+    borderRightColor: "#2a2a2a",
+    overflow: "hidden",
+  },
+  keyboardColumnStacked: {
+    borderRightWidth: 0,
+    marginBottom: 8,
   },
   gradesColumn: {
     flex: 1,
     minWidth: 0,
     minHeight: 0,
+  },
+  gradesColumnStacked: {
+    flex: 0,
+    minHeight: 180,
   },
   finalAverageBar: {
     flexShrink: 0,
@@ -834,25 +907,25 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 10,
-    backgroundColor: '#1565C0',
-    alignItems: 'center',
+    backgroundColor: "#1565C0",
+    alignItems: "center",
   },
   finalAverageLabel: {
     ...fontApp,
-    color: '#E3F2FD',
+    color: "#E3F2FD",
     fontSize: 13,
     marginBottom: 4,
   },
   finalAverageValue: {
     ...fontApp,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 32,
   },
   finalAverageWarning: {
     ...fontApp,
-    color: '#FFEB3B',
+    color: "#FFEB3B",
     fontSize: 12,
     marginTop: 6,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
