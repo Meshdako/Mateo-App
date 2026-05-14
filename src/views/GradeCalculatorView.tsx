@@ -6,6 +6,8 @@ import {
   Text,
   TouchableOpacity,
   Platform,
+  Modal,
+  Pressable,
   useWindowDimensions,
 } from "react-native";
 import {
@@ -42,8 +44,8 @@ export default function GradeCalculatorView() {
   const useSplitLayout = width >= 600;
   const [state, setState] = useState<GradeCalculatorState>(initialState);
   const [tempGrade, setTempGrade] = useState<number | null>(null);
-  /** Si no es null, el próximo «+» en peso actualiza esa fila en lugar de crear una nueva. */
   const [editingGradeId, setEditingGradeId] = useState<string | null>(null);
+  const [isNotesDrawerOpen, setIsNotesDrawerOpen] = useState(false);
   /** Aviso visible (p. ej. en web `Alert` no siempre se ve). */
   const [weightBudgetError, setWeightBudgetError] = useState<string | null>(
     null,
@@ -52,6 +54,12 @@ export default function GradeCalculatorView() {
   useEffect(() => {
     setWeightBudgetError(null);
   }, [state.currentInput, state.inputMode, state.weightEntryMode]);
+
+  useEffect(() => {
+    if (useSplitLayout) {
+      setIsNotesDrawerOpen(false);
+    }
+  }, [useSplitLayout]);
 
   const weightedAverage = GradeCalculatorService.calculateWeightedAverage(
     state.grades,
@@ -477,231 +485,368 @@ export default function GradeCalculatorView() {
     return false;
   };
 
+  const finalAverageSection = (
+    <View style={styles.finalAverageBar}>
+      <Text style={styles.finalAverageLabel}>Nota final (ponderada)</Text>
+      <GradeGlowValue grade={weightedAverage} style={styles.finalAverageValue}>
+        {weightedAverage.toFixed(2)}
+      </GradeGlowValue>
+      {state.grades.length > 0 && !weightOkForFinal && (
+        <Text style={styles.finalAverageWarning}>⚠️ Peso ≠ 100%</Text>
+      )}
+    </View>
+  );
+
+  const splitActionButtonsSection = (
+    <View style={styles.actionRow}>
+      {ACTION_BUTTONS.map((btn) => (
+        <TouchableOpacity
+          key={btn.value}
+          style={[
+            styles.actionButton,
+            { width: actionBtnWidth, height: actionBtnHeight },
+            btn.type === "add" && styles.addButton,
+            btn.type === "help" && styles.helpButton,
+          ]}
+          onPress={() => handlePress(btn.value, btn.type)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.actionButtonText, { fontSize: actionBtnHeight * 0.42 }]}>
+            {btn.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  const notesButtonSection =
+    !useSplitLayout && state.grades.length > 0 ? (
+      <TouchableOpacity
+        style={styles.notesToggleButton}
+        onPress={() => setIsNotesDrawerOpen(true)}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.notesToggleButtonText}>Notas</Text>
+      </TouchableOpacity>
+    ) : null;
+
+  const gradesSection = (
+    <View style={styles.gradesColumn}>
+      <GradesList
+        grades={state.grades}
+        onDeleteGrade={handleDeleteGrade}
+        onEditGrade={handleStartEdit}
+        embedded={useSplitLayout}
+      />
+    </View>
+  );
+
+  const keyboardSection = (
+    <View style={[styles.keyboardColumn, !useSplitLayout && styles.keyboardColumnStacked]}>
+      <View style={styles.keyboardContainer}>
+        {GRADE_NUMERIC_ROWS.map((row, rowIndex) => (
+          <View key={rowIndex} style={styles.row}>
+            {row.map((btn) => (
+              <GradeButton
+                key={btn.value}
+                label={btn.label}
+                type={btn.type}
+                size={keySize}
+                gap={keyGap}
+                square={!useSplitLayout}
+                onPress={() => handlePress(btn.value, btn.type)}
+                disabled={isButtonDisabled(btn.value, btn.type)}
+              />
+            ))}
+          </View>
+        ))}
+
+        <View style={styles.row}>
+          {useSplitLayout ? (
+            showWeightKeypad && state.weightEntryMode === "decimal" ? (
+              <>
+                <GradeButton
+                  label="0"
+                  type="number"
+                  size={keySize}
+                  gap={keyGap}
+                  onPress={() => handlePress("0", "number")}
+                  disabled={isButtonDisabled("0", "number")}
+                />
+                <GradeButton
+                  label=","
+                  type="decimal"
+                  size={keySize}
+                  gap={keyGap}
+                  onPress={() => handlePress(".", "decimal")}
+                  disabled={isButtonDisabled(".", "decimal")}
+                />
+                <GradeButton
+                  label="←"
+                  type="delete"
+                  size={keySize}
+                  gap={keyGap}
+                  onPress={() => handlePress("delete", "delete")}
+                  disabled={false}
+                />
+              </>
+            ) : showWeightKeypad ? (
+              <>
+                <GradeButton
+                  label="0"
+                  type="number"
+                  size={keySize}
+                  gap={keyGap}
+                  onPress={() => handlePress("0", "number")}
+                  disabled={isButtonDisabled("0", "number")}
+                />
+                <GradeButton
+                  label="←"
+                  type="delete"
+                  size={keySize}
+                  gap={keyGap}
+                  onPress={() => handlePress("delete", "delete")}
+                  disabled={false}
+                />
+              </>
+            ) : (
+              <GradeButton
+                label="←"
+                type="delete"
+                size={keySize}
+                gap={keyGap}
+                onPress={() => handlePress("delete", "delete")}
+                disabled={false}
+              />
+            )
+          ) : showWeightKeypad && state.weightEntryMode === "decimal" ? (
+            <>
+              <GradeButton
+                label="0"
+                type="number"
+                size={keySize}
+                gap={keyGap}
+                square
+                onPress={() => handlePress("0", "number")}
+                disabled={isButtonDisabled("0", "number")}
+              />
+              <GradeButton
+                label=","
+                type="decimal"
+                size={keySize}
+                gap={keyGap}
+                square
+                onPress={() => handlePress(".", "decimal")}
+                disabled={isButtonDisabled(".", "decimal")}
+              />
+              <View style={{ width: keySize + keyGap, height: keySize + keyGap }} />
+            </>
+          ) : showWeightKeypad ? (
+            <>
+              <GradeButton
+                label="0"
+                type="number"
+                size={keySize}
+                gap={keyGap}
+                square
+                onPress={() => handlePress("0", "number")}
+                disabled={isButtonDisabled("0", "number")}
+              />
+              <View style={{ width: keySize + keyGap, height: keySize + keyGap }} />
+              <View style={{ width: keySize + keyGap, height: keySize + keyGap }} />
+            </>
+          ) : (
+            <>
+              <View style={{ width: keySize + keyGap, height: keySize + keyGap }} />
+              <View style={{ width: keySize + keyGap, height: keySize + keyGap }} />
+              <View style={{ width: keySize + keyGap, height: keySize + keyGap }} />
+            </>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+
+  const displayInputSection = (
+    <>
+      <GradeDisplay
+        value={displayInput}
+        mode={state.inputMode}
+        placeholder={state.inputMode === "grade" ? "0.0" : "0"}
+        weightEntryMode={state.inputMode === "weight" ? state.weightEntryMode : undefined}
+        variant="compact"
+      />
+
+      {weightBudgetError !== null && (
+        <View style={styles.weightBudgetErrorBanner} accessibilityRole="alert">
+          <Text style={styles.weightBudgetErrorTitle}>Supera el 100 %</Text>
+          <Text style={styles.weightBudgetErrorText} numberOfLines={4}>
+            {weightBudgetError}
+          </Text>
+        </View>
+      )}
+
+      {tempGrade !== null && (
+        <View style={styles.tempGradeContainer}>
+          <View style={styles.tempGradeRow}>
+            {editingGradeId !== null && <Text style={styles.editingBadge}>Editando</Text>}
+            <Text style={styles.tempGradeLabel}>Nota:</Text>
+            <Text style={styles.tempGradeValue}>{tempGrade.toFixed(1)}</Text>
+          </View>
+          {editingGradeId !== null && (
+            <TouchableOpacity
+              onPress={handleCancelEdit}
+              style={styles.cancelEditBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="Cancelar edición"
+            >
+              <Text style={styles.cancelEditText}>Cancelar</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {showWeightModeToggle && (
+        <View style={styles.weightModeRow}>
+          <TouchableOpacity
+            style={[
+              styles.weightModeChip,
+              state.weightEntryMode === "integer" && styles.weightModeChipActive,
+            ]}
+            onPress={() => setWeightEntryMode("integer")}
+            activeOpacity={0.8}
+          >
+            <Text
+              style={[
+                styles.weightModeChipText,
+                state.weightEntryMode === "integer" && styles.weightModeChipTextActive,
+              ]}
+            >
+              Enteros
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.weightModeChip,
+              state.weightEntryMode === "decimal" && styles.weightModeChipActive,
+            ]}
+            onPress={() => setWeightEntryMode("decimal")}
+            activeOpacity={0.8}
+          >
+            <Text
+              style={[
+                styles.weightModeChipText,
+                state.weightEntryMode === "decimal" && styles.weightModeChipTextActive,
+              ]}
+            >
+              Con decimal
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </>
+  );
+
+  const mobileTopSection = (
+    <View style={styles.mobileTopSection}>
+      {finalAverageSection}
+      <View style={styles.calculatorPanel}>{notesButtonSection}</View>
+    </View>
+  );
+
+  const mobileEntrySection = <View style={styles.calculatorPanel}>{displayInputSection}</View>;
+
+  const mobileDrawerSection = (
+    <Modal
+      visible={isNotesDrawerOpen}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setIsNotesDrawerOpen(false)}
+    >
+      <Pressable style={styles.drawerBackdrop} onPress={() => setIsNotesDrawerOpen(false)}>
+        <Pressable style={styles.drawerPanel} onPress={() => {}}>
+          <View style={styles.drawerHeader}>
+            <Text style={styles.drawerTitle}>Notas ingresadas</Text>
+            <TouchableOpacity
+              style={styles.drawerCloseButton}
+              onPress={() => setIsNotesDrawerOpen(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.drawerCloseButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+          <GradesList
+            grades={state.grades}
+            onDeleteGrade={handleDeleteGrade}
+            onEditGrade={handleStartEdit}
+            embedded
+          />
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+
+  const mobileKeypadSection = (
+    <View style={[styles.splitRow, styles.stackedSection]}>
+      <View style={styles.actionRowMobileTop}>
+        <GradeButton
+          label="+"
+          type="add"
+          size={keySize}
+          gap={keyGap}
+          square
+          onPress={() => handlePress("add", "add")}
+          disabled={false}
+        />
+        <GradeButton
+          label="?"
+          type="help"
+          size={keySize}
+          gap={keyGap}
+          square
+          onPress={() => handlePress("help", "help")}
+          disabled={false}
+        />
+        <GradeButton
+          label="←"
+          type="delete"
+          size={keySize}
+          gap={keyGap}
+          square
+          onPress={() => handlePress("delete", "delete")}
+          disabled={false}
+        />
+      </View>
+      {keyboardSection}
+    </View>
+  );
+
   return (
     <SafeAreaView
       style={styles.safe}
       edges={["top", "left", "right", "bottom"]}
     >
       <View style={styles.root}>
-        <View style={styles.calculatorPanel}>
-          <GradeDisplay
-            value={displayInput}
-            mode={state.inputMode}
-            placeholder={state.inputMode === "grade" ? "0.0" : "0"}
-            weightEntryMode={
-              state.inputMode === "weight" ? state.weightEntryMode : undefined
-            }
-            variant="compact"
-          />
-
-          {weightBudgetError !== null && (
-            <View
-              style={styles.weightBudgetErrorBanner}
-              accessibilityRole="alert"
-            >
-              <Text style={styles.weightBudgetErrorTitle}>Supera el 100 %</Text>
-              <Text style={styles.weightBudgetErrorText} numberOfLines={4}>
-                {weightBudgetError}
-              </Text>
+        {useSplitLayout ? (
+          <>
+            <View style={styles.calculatorPanel}>
+              {displayInputSection}
+              {splitActionButtonsSection}
             </View>
-          )}
-
-          {tempGrade !== null && (
-            <View style={styles.tempGradeContainer}>
-              <View style={styles.tempGradeRow}>
-                {editingGradeId !== null && (
-                  <Text style={styles.editingBadge}>Editando</Text>
-                )}
-                <Text style={styles.tempGradeLabel}>Nota:</Text>
-                <Text style={styles.tempGradeValue}>
-                  {tempGrade.toFixed(1)}
-                </Text>
-              </View>
-              {editingGradeId !== null && (
-                <TouchableOpacity
-                  onPress={handleCancelEdit}
-                  style={styles.cancelEditBtn}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  accessibilityLabel="Cancelar edición"
-                >
-                  <Text style={styles.cancelEditText}>Cancelar</Text>
-                </TouchableOpacity>
-              )}
+            {finalAverageSection}
+            <View style={styles.splitRow}>
+              {keyboardSection}
+              {gradesSection}
             </View>
-          )}
-
-          {showWeightModeToggle && (
-            <View style={styles.weightModeRow}>
-              <TouchableOpacity
-                style={[
-                  styles.weightModeChip,
-                  state.weightEntryMode === "integer" &&
-                    styles.weightModeChipActive,
-                ]}
-                onPress={() => setWeightEntryMode("integer")}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.weightModeChipText,
-                    state.weightEntryMode === "integer" &&
-                      styles.weightModeChipTextActive,
-                  ]}
-                >
-                  Enteros
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.weightModeChip,
-                  state.weightEntryMode === "decimal" &&
-                    styles.weightModeChipActive,
-                ]}
-                onPress={() => setWeightEntryMode("decimal")}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.weightModeChipText,
-                    state.weightEntryMode === "decimal" &&
-                      styles.weightModeChipTextActive,
-                  ]}
-                >
-                  Con decimal
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          <View style={styles.actionRow}>
-            {ACTION_BUTTONS.map((btn) => (
-              <TouchableOpacity
-                key={btn.value}
-                style={[
-                  styles.actionButton,
-                  { width: actionBtnWidth, height: actionBtnHeight },
-                  btn.type === "add" && styles.addButton,
-                  btn.type === "help" && styles.helpButton,
-                ]}
-                onPress={() => handlePress(btn.value, btn.type)}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.actionButtonText,
-                    { fontSize: actionBtnHeight * 0.42 },
-                  ]}
-                >
-                  {btn.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        <View style={[styles.splitRow, !useSplitLayout && styles.stackedSection]}>
-          <View style={[styles.keyboardColumn, !useSplitLayout && styles.keyboardColumnStacked]}>
-            <View style={styles.keyboardContainer}>
-              {GRADE_NUMERIC_ROWS.map((row, rowIndex) => (
-                <View key={rowIndex} style={styles.row}>
-                  {row.map((btn) => (
-                    <GradeButton
-                      key={btn.value}
-                      label={btn.label}
-                      type={btn.type}
-                      size={keySize}
-                      gap={keyGap}
-                      onPress={() => handlePress(btn.value, btn.type)}
-                      disabled={isButtonDisabled(btn.value, btn.type)}
-                    />
-                  ))}
-                </View>
-              ))}
-
-              <View style={styles.row}>
-                {showWeightKeypad && state.weightEntryMode === "decimal" ? (
-                  <>
-                    <GradeButton
-                      label="0"
-                      type="number"
-                      size={keySize}
-                      gap={keyGap}
-                      onPress={() => handlePress("0", "number")}
-                      disabled={isButtonDisabled("0", "number")}
-                    />
-                    <GradeButton
-                      label=","
-                      type="decimal"
-                      size={keySize}
-                      gap={keyGap}
-                      onPress={() => handlePress(".", "decimal")}
-                      disabled={isButtonDisabled(".", "decimal")}
-                    />
-                    <GradeButton
-                      label="←"
-                      type="delete"
-                      size={keySize}
-                      gap={keyGap}
-                      onPress={() => handlePress("delete", "delete")}
-                      disabled={false}
-                    />
-                  </>
-                ) : showWeightKeypad ? (
-                  <>
-                    <GradeButton
-                      label="0"
-                      type="number"
-                      size={keySize}
-                      gap={keyGap}
-                      onPress={() => handlePress("0", "number")}
-                      disabled={isButtonDisabled("0", "number")}
-                    />
-                    <GradeButton
-                      label="←"
-                      type="delete"
-                      size={keySize}
-                      gap={keyGap}
-                      onPress={() => handlePress("delete", "delete")}
-                      disabled={false}
-                    />
-                  </>
-                ) : (
-                  <GradeButton
-                    label="←"
-                    type="delete"
-                    size={keySize}
-                    gap={keyGap}
-                    onPress={() => handlePress("delete", "delete")}
-                    disabled={false}
-                  />
-                )}
-              </View>
-            </View>
-          </View>
-
-          <View style={[styles.gradesColumn, !useSplitLayout && styles.gradesColumnStacked]}>
-            <GradesList
-              grades={state.grades}
-              onDeleteGrade={handleDeleteGrade}
-              onEditGrade={handleStartEdit}
-              weightedAverage={weightedAverage}
-              embedded={useSplitLayout}
-            />
-          </View>
-        </View>
-
-        <View style={styles.finalAverageBar}>
-          <Text style={styles.finalAverageLabel}>Nota final (ponderada)</Text>
-          <GradeGlowValue
-            grade={weightedAverage}
-            style={styles.finalAverageValue}
-          >
-            {weightedAverage.toFixed(2)}
-          </GradeGlowValue>
-          {state.grades.length > 0 && !weightOkForFinal && (
-            <Text style={styles.finalAverageWarning}>⚠️ Peso ≠ 100%</Text>
-          )}
-        </View>
+          </>
+        ) : (
+          <>
+            {mobileTopSection}
+            {mobileEntrySection}
+            {mobileKeypadSection}
+            {mobileDrawerSection}
+          </>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -828,6 +973,25 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     marginTop: 2,
   },
+  actionRowMobileTop: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 2,
+  },
+  notesToggleButton: {
+    alignSelf: "center",
+    backgroundColor: "#2a6bc7",
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginTop: 2,
+  },
+  notesToggleButtonText: {
+    ...fontApp,
+    color: "#FFFFFF",
+    fontSize: 13,
+  },
   actionButton: {
     borderRadius: 22,
     justifyContent: "center",
@@ -875,6 +1039,10 @@ const styles = StyleSheet.create({
   stackedSection: {
     flexDirection: "column",
     overflow: "visible",
+    flexShrink: 0,
+  },
+  mobileTopSection: {
+    flexShrink: 0,
   },
   keyboardColumn: {
     flex: 1,
@@ -898,6 +1066,44 @@ const styles = StyleSheet.create({
   gradesColumnStacked: {
     flex: 0,
     minHeight: 180,
+  },
+  drawerBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "flex-start",
+    alignItems: "flex-end",
+  },
+  drawerPanel: {
+    width: "82%",
+    height: "100%",
+    backgroundColor: "#0b0b0b",
+    borderLeftWidth: 1,
+    borderLeftColor: "#2a2a2a",
+    paddingTop: 12,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+  },
+  drawerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  drawerTitle: {
+    ...fontApp,
+    color: "#FFFFFF",
+    fontSize: 15,
+  },
+  drawerCloseButton: {
+    backgroundColor: "#424242",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  drawerCloseButtonText: {
+    ...fontApp,
+    color: "#FFFFFF",
+    fontSize: 12,
   },
   finalAverageBar: {
     flexShrink: 0,

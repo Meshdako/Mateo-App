@@ -9,7 +9,6 @@ interface GradesListProps {
   grades: Grade[];
   onDeleteGrade: (id: string) => void;
   onEditGrade: (id: string) => void;
-  weightedAverage: number;
   /** Lista en columna estrecha junto al teclado. */
   embedded?: boolean;
 }
@@ -18,7 +17,6 @@ export default function GradesList({
   grades,
   onDeleteGrade,
   onEditGrade,
-  weightedAverage,
   embedded = false,
 }: GradesListProps) {
   const totalWeight = grades.reduce((sum, g) => sum + g.weight, 0);
@@ -80,14 +78,6 @@ export default function GradesList({
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.listContent, embedded && styles.listContentEmbedded]}
       />
-
-      {!embedded && (
-        <View style={styles.averageContainer}>
-          <Text style={styles.averageLabel}>Promedio</Text>
-          <Text style={styles.averageValue}>{weightedAverage.toFixed(2)}</Text>
-          {!weightOk && <Text style={styles.warningText}>⚠️ Peso ≠ 100%</Text>}
-        </View>
-      )}
     </View>
   );
 }
@@ -188,32 +178,5 @@ const styles = StyleSheet.create({
   },
   listContentEmbedded: {
     paddingBottom: 2,
-  },
-  averageContainer: {
-    backgroundColor: '#2196F3',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginTop: 8,
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  averageLabel: {
-    ...fontApp,
-    color: '#FFFFFF',
-    fontSize: 13,
-    marginBottom: 4,
-  },
-  averageValue: {
-    ...fontApp,
-    color: '#FFFFFF',
-    fontSize: 34,
-  },
-  warningText: {
-    ...fontApp,
-    color: '#FFFFFF',
-    fontSize: 12,
-    marginTop: 8,
-    textAlign: 'center',
   },
 });
