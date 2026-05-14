@@ -7,10 +7,9 @@ interface GradeButtonProps {
   type: ButtonType;
   onPress: () => void;
   disabled?: boolean;
-  /** Tamaño del botón (ancho y alto); se adapta al ancho de pantalla desde la vista. */
   size?: number;
-  /** Margen horizontal/vertical entre botones (la mitad se aplica a cada lado). */
   gap?: number;
+  square?: boolean;
 }
 
 export default function GradeButton({
@@ -20,6 +19,7 @@ export default function GradeButton({
   disabled = false,
   size = 72,
   gap = 8,
+  square = false,
 }: GradeButtonProps) {
   const getBackgroundColor = (): string => {
     if (disabled) return '#555555';
@@ -44,7 +44,7 @@ export default function GradeButton({
   const dynamicButton: ViewStyle = {
     width: size,
     height: size,
-    borderRadius: size / 2,
+    borderRadius: square ? 10 : size / 2,
     marginHorizontal: margin,
     marginVertical: margin,
     justifyContent: 'center',
