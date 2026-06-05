@@ -42,8 +42,8 @@ export default function GradeButton({
   const fontSize = Math.max(16, Math.round(size * 0.34));
 
   const dynamicButton: ViewStyle = {
-    width: size,
-    height: size,
+    width: size*2,
+    height: size*2,
     borderRadius: square ? 10 : size / 2,
     marginHorizontal: margin,
     marginVertical: margin,

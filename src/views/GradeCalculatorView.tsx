@@ -1,14 +1,14 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  View,
-  StyleSheet,
   Alert,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  Platform,
-  Modal,
-  Pressable,
   useWindowDimensions,
+  View,
 } from "react-native";
 import {
   SafeAreaView,
@@ -17,17 +17,17 @@ import {
 import { GradeButton, GradeDisplay, GradesList } from "../components";
 import GradeGlowValue from "../components/grades/GradeGlowValue";
 import {
-  GradeCalculatorState,
-  Grade,
+  ACTION_BUTTONS,
+  FONT_CALDSTONE_SEMIBOLD,
+  GRADE_NUMERIC_ROWS,
+} from "../constants";
+import {
   ButtonType,
+  Grade,
+  GradeCalculatorState,
   WeightEntryMode,
 } from "../interfaces";
 import { GradeCalculatorService } from "../services";
-import {
-  GRADE_NUMERIC_ROWS,
-  ACTION_BUTTONS,
-  FONT_CALDSTONE_SEMIBOLD,
-} from "../constants";
 
 const fontApp = { fontFamily: FONT_CALDSTONE_SEMIBOLD };
 
@@ -511,7 +511,12 @@ export default function GradeCalculatorView() {
           onPress={() => handlePress(btn.value, btn.type)}
           activeOpacity={0.7}
         >
-          <Text style={[styles.actionButtonText, { fontSize: actionBtnHeight * 0.42 }]}>
+          <Text
+            style={[
+              styles.actionButtonText,
+              { fontSize: actionBtnHeight * 0.42 },
+            ]}
+          >
             {btn.label}
           </Text>
         </TouchableOpacity>
@@ -542,7 +547,12 @@ export default function GradeCalculatorView() {
   );
 
   const keyboardSection = (
-    <View style={[styles.keyboardColumn, !useSplitLayout && styles.keyboardColumnStacked]}>
+    <View
+      style={[
+        styles.keyboardColumn,
+        !useSplitLayout && styles.keyboardColumnStacked,
+      ]}
+    >
       <View style={styles.keyboardContainer}>
         {GRADE_NUMERIC_ROWS.map((row, rowIndex) => (
           <View key={rowIndex} style={styles.row}>
@@ -639,7 +649,9 @@ export default function GradeCalculatorView() {
                 onPress={() => handlePress(".", "decimal")}
                 disabled={isButtonDisabled(".", "decimal")}
               />
-              <View style={{ width: keySize + keyGap, height: keySize + keyGap }} />
+              <View
+                style={{ width: keySize + keyGap, height: keySize + keyGap }}
+              />
             </>
           ) : showWeightKeypad ? (
             <>
@@ -652,14 +664,24 @@ export default function GradeCalculatorView() {
                 onPress={() => handlePress("0", "number")}
                 disabled={isButtonDisabled("0", "number")}
               />
-              <View style={{ width: keySize + keyGap, height: keySize + keyGap }} />
-              <View style={{ width: keySize + keyGap, height: keySize + keyGap }} />
+              <View
+                style={{ width: keySize + keyGap, height: keySize + keyGap }}
+              />
+              <View
+                style={{ width: keySize + keyGap, height: keySize + keyGap }}
+              />
             </>
           ) : (
             <>
-              <View style={{ width: keySize + keyGap, height: keySize + keyGap }} />
-              <View style={{ width: keySize + keyGap, height: keySize + keyGap }} />
-              <View style={{ width: keySize + keyGap, height: keySize + keyGap }} />
+              <View
+                style={{ width: keySize + keyGap, height: keySize + keyGap }}
+              />
+              <View
+                style={{ width: keySize + keyGap, height: keySize + keyGap }}
+              />
+              <View
+                style={{ width: keySize + keyGap, height: keySize + keyGap }}
+              />
             </>
           )}
         </View>
@@ -673,7 +695,9 @@ export default function GradeCalculatorView() {
         value={displayInput}
         mode={state.inputMode}
         placeholder={state.inputMode === "grade" ? "0.0" : "0"}
-        weightEntryMode={state.inputMode === "weight" ? state.weightEntryMode : undefined}
+        weightEntryMode={
+          state.inputMode === "weight" ? state.weightEntryMode : undefined
+        }
         variant="compact"
       />
 
@@ -689,7 +713,9 @@ export default function GradeCalculatorView() {
       {tempGrade !== null && (
         <View style={styles.tempGradeContainer}>
           <View style={styles.tempGradeRow}>
-            {editingGradeId !== null && <Text style={styles.editingBadge}>Editando</Text>}
+            {editingGradeId !== null && (
+              <Text style={styles.editingBadge}>Editando</Text>
+            )}
             <Text style={styles.tempGradeLabel}>Nota:</Text>
             <Text style={styles.tempGradeValue}>{tempGrade.toFixed(1)}</Text>
           </View>
@@ -711,7 +737,8 @@ export default function GradeCalculatorView() {
           <TouchableOpacity
             style={[
               styles.weightModeChip,
-              state.weightEntryMode === "integer" && styles.weightModeChipActive,
+              state.weightEntryMode === "integer" &&
+                styles.weightModeChipActive,
             ]}
             onPress={() => setWeightEntryMode("integer")}
             activeOpacity={0.8}
@@ -719,7 +746,8 @@ export default function GradeCalculatorView() {
             <Text
               style={[
                 styles.weightModeChipText,
-                state.weightEntryMode === "integer" && styles.weightModeChipTextActive,
+                state.weightEntryMode === "integer" &&
+                  styles.weightModeChipTextActive,
               ]}
             >
               Enteros
@@ -728,7 +756,8 @@ export default function GradeCalculatorView() {
           <TouchableOpacity
             style={[
               styles.weightModeChip,
-              state.weightEntryMode === "decimal" && styles.weightModeChipActive,
+              state.weightEntryMode === "decimal" &&
+                styles.weightModeChipActive,
             ]}
             onPress={() => setWeightEntryMode("decimal")}
             activeOpacity={0.8}
@@ -736,7 +765,8 @@ export default function GradeCalculatorView() {
             <Text
               style={[
                 styles.weightModeChipText,
-                state.weightEntryMode === "decimal" && styles.weightModeChipTextActive,
+                state.weightEntryMode === "decimal" &&
+                  styles.weightModeChipTextActive,
               ]}
             >
               Con decimal
@@ -754,7 +784,9 @@ export default function GradeCalculatorView() {
     </View>
   );
 
-  const mobileEntrySection = <View style={styles.calculatorPanel}>{displayInputSection}</View>;
+  const mobileEntrySection = (
+    <View style={styles.calculatorPanel}>{displayInputSection}</View>
+  );
 
   const mobileDrawerSection = (
     <Modal
@@ -763,7 +795,10 @@ export default function GradeCalculatorView() {
       animationType="slide"
       onRequestClose={() => setIsNotesDrawerOpen(false)}
     >
-      <Pressable style={styles.drawerBackdrop} onPress={() => setIsNotesDrawerOpen(false)}>
+      <Pressable
+        style={styles.drawerBackdrop}
+        onPress={() => setIsNotesDrawerOpen(false)}
+      >
         <Pressable style={styles.drawerPanel} onPress={() => {}}>
           <View style={styles.drawerHeader}>
             <Text style={styles.drawerTitle}>Notas ingresadas</Text>
