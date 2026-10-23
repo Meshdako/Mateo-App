@@ -10,6 +10,8 @@ interface GradeButtonProps {
   size?: number;
   gap?: number;
   square?: boolean;
+  span?: 1 | 2;
+  fill?: boolean;
 }
 
 export default function GradeButton({
@@ -20,6 +22,8 @@ export default function GradeButton({
   size = 72,
   gap = 8,
   square = false,
+  span = 1,
+  fill = false,
 }: GradeButtonProps) {
   const getBackgroundColor = (): string => {
     if (disabled) return '#555555';
@@ -39,23 +43,38 @@ export default function GradeButton({
   };
 
   const margin = gap / 2;
-  const fontSize = Math.max(16, Math.round(size * 0.34));
 
-  const dynamicButton: ViewStyle = {
-    width: size*2,
-    height: size*2,
-    borderRadius: square ? 10 : size / 2,
-    marginHorizontal: margin,
-    marginVertical: margin,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: getBackgroundColor(),
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  };
+  const dynamicButton: ViewStyle = fill
+    ? {
+        flex: span === 2 ? 2 : 1,
+        margin: margin,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: getBackgroundColor(),
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+      }
+    : {
+        width: span === 2 ? size * 2 + gap : size,
+        height: size,
+        borderRadius: square ? 10 : size / 2,
+        marginHorizontal: margin,
+        marginVertical: margin,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: getBackgroundColor(),
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+      };
+
+  const fontSize = fill ? 22 : Math.max(20, Math.round(size * 0.48));
 
   return (
     <TouchableOpacity

@@ -22,4 +22,5 @@ export const GRADE_NUMERIC_ROWS: GradeButton[][] = [
 export const ACTION_BUTTONS: GradeButton[] = [
   { label: '+', type: 'add', value: 'add' },
   { label: '?', type: 'help', value: 'help' },
+  { label: '←', type: 'delete', value: 'delete' },
 ];

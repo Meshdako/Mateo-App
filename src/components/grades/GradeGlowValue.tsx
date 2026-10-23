@@ -9,12 +9,12 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-/** Anclas 1 → 4 → 7 (escala chilena). */
-const RED = [0xe5, 0x39, 0x35] as const;
-const YELLOW = [0xfd, 0xd8, 0x35] as const;
-const GREEN = [0x2e, 0x7d, 0x32] as const;
+/** Anclas 1 → 4 → 7 (escala chilena). Tonos claros para contrastar sobre #1565C0. */
+const RED = [0xff, 0xa3, 0xa3] as const;
+const YELLOW = [0xff, 0xeb, 0x3b] as const;
+const GREEN = [0x76, 0xff, 0x7a] as const;
 
-const NEUTRAL = '#90A4AE';
+const NEUTRAL = '#CFD8DC';
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
