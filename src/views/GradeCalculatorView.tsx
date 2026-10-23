@@ -21,12 +21,7 @@ import {
   FONT_CALDSTONE_SEMIBOLD,
   GRADE_NUMERIC_ROWS,
 } from "../constants";
-import {
-  ButtonType,
-  Grade,
-  GradeCalculatorState,
-  WeightEntryMode,
-} from "../interfaces";
+import { ButtonType, Grade, GradeCalculatorState } from "../interfaces";
 import { GradeCalculatorService } from "../services";
 
 const fontApp = { fontFamily: FONT_CALDSTONE_SEMIBOLD };
@@ -46,7 +41,6 @@ export default function GradeCalculatorView() {
   const [tempGrade, setTempGrade] = useState<number | null>(null);
   const [editingGradeId, setEditingGradeId] = useState<string | null>(null);
   const [isNotesDrawerOpen, setIsNotesDrawerOpen] = useState(false);
-  /** Aviso visible (p. ej. en web `Alert` no siempre se ve). */
   const [weightBudgetError, setWeightBudgetError] = useState<string | null>(
     null,
   );
@@ -64,6 +58,10 @@ export default function GradeCalculatorView() {
   const weightedAverage = GradeCalculatorService.calculateWeightedAverage(
     state.grades,
   );
+  const weightedAverageRounded =
+    GradeCalculatorService.roundWeightedAverage(weightedAverage);
+  const weightedAverageTruncated =
+    GradeCalculatorService.truncateWeightedAverage(weightedAverage);
 
   const weightOkForFinal = useMemo(() => {
     if (state.grades.length === 0) return true;
@@ -78,9 +76,15 @@ export default function GradeCalculatorView() {
         ? GradeCalculatorService.getWeightDisplayFromBuffer(state.currentInput)
         : state.currentInput;
 
+  const gradeColumnValue =
+    state.inputMode === "grade"
+      ? displayInput
+      : tempGrade !== null
+        ? tempGrade.toFixed(1)
+        : "";
+  const weightColumnValue = state.inputMode === "weight" ? displayInput : "";
+
   const showWeightKeypad = state.inputMode === "weight";
-  const showWeightModeToggle =
-    state.inputMode === "weight" && tempGrade !== null;
 
   /**
    * Tamaño de teclas **solo** desde ventana + insets (sin `onLayout`).
@@ -92,40 +96,38 @@ export default function GradeCalculatorView() {
     const inner = width - horizontalPad * 2;
     const colW = Math.max(72, Math.floor(inner / 2) - 6);
 
-    const gap = Math.max(3, Math.min(10, Math.round(colW * 0.055)));
+    const gap = Math.max(1, Math.min(6, Math.round(colW * 0.03)));
 
-    /** Ancho total de 3 botones circulares con `marginHorizontal = gap/2` cada uno. */
     const rowWidthForKeys = (ks: number) => 3 * ks + 3 * gap;
     const rowHeightForKeys = (ks: number) => ks + gap;
 
     const usableH = height - insets.top - insets.bottom;
     const displayBlock = 74;
-    /** Reserva fija (px) como si el aviso de error estuviera visible. */
     const errorReserve = 72;
-    /** Fila «Nota:» / edición. */
     const tempReserve = 44;
-    /** Fila chips enteros / decimal. */
-    const chipReserve = 36;
-    const actionBlock = 44;
-    const finalAverageBar = 96;
-    const verticalGaps = 24;
+    const chipReserve = 52;
+    const finalAverageBar = 130;
+    const verticalGaps = 20;
+    const notesHeaderReserve = 30;
     const topOverhead =
       displayBlock +
       errorReserve +
       tempReserve +
       chipReserve +
-      actionBlock +
       finalAverageBar +
-      verticalGaps;
-    const splitH = Math.max(48, usableH - topOverhead - 28);
+      verticalGaps +
+      notesHeaderReserve;
+    
+    const notesListMaxHeight = Math.max(80, usableH * 0.25);
+    const remainingForKeyboard = Math.max(200, usableH - topOverhead - notesListMaxHeight - 20);
 
     const rows = 4;
     const maxFromWidth = Math.floor((colW - 3 * gap) / 3);
     const innerVerticalPad = 8;
-    const maxFromHeight = Math.floor((splitH - innerVerticalPad) / rows - gap);
+    const maxFromHeight = Math.floor((remainingForKeyboard - innerVerticalPad) / rows - gap);
 
     let keySize = Math.min(
-      74,
+      90,
       Math.max(0, maxFromWidth),
       Math.max(0, maxFromHeight),
     );
@@ -136,16 +138,16 @@ export default function GradeCalculatorView() {
     }
     while (
       keySize > 24 &&
-      rows * rowHeightForKeys(keySize) > splitH - innerVerticalPad
+      rows * rowHeightForKeys(keySize) > remainingForKeyboard - innerVerticalPad
     ) {
       keySize -= 1;
     }
 
     const actionBtnHeight = Math.max(
-      32,
-      Math.min(52, Math.round(keySize * 0.64)),
+      40,
+      Math.min(56, Math.round(keySize * 0.7)),
     );
-    const actionBtnWidth = Math.min(148, Math.max(72, (inner - gap * 2) / 2));
+    const actionBtnWidth = Math.min(160, Math.max(80, (inner - gap * 2) / 2));
 
     return { keySize, keyGap: gap, actionBtnWidth, actionBtnHeight };
   }, [width, height, insets.top, insets.bottom]);
@@ -172,7 +174,7 @@ export default function GradeCalculatorView() {
 
   const handleWeightDecimalSeparatorPress = useCallback(() => {
     setState((prev) => {
-      if (prev.inputMode !== "weight" || prev.weightEntryMode !== "decimal") {
+      if (prev.inputMode !== "weight") {
         return prev;
       }
       if (
@@ -183,18 +185,7 @@ export default function GradeCalculatorView() {
       return {
         ...prev,
         currentInput: `${prev.currentInput}.`,
-      };
-    });
-  }, []);
-
-  const setWeightEntryMode = useCallback((mode: WeightEntryMode) => {
-    setState((prev) => {
-      if (prev.inputMode !== "weight") return prev;
-      if (prev.weightEntryMode === mode) return prev;
-      return {
-        ...prev,
-        weightEntryMode: mode,
-        currentInput: "",
+        weightEntryMode: "decimal",
       };
     });
   }, []);
@@ -324,6 +315,7 @@ export default function GradeCalculatorView() {
         }));
         setEditingGradeId(null);
         setTempGrade(null);
+        setIsNotesDrawerOpen(true);
         return;
       }
 
@@ -402,6 +394,7 @@ export default function GradeCalculatorView() {
       setWeightBudgetError(null);
       setEditingGradeId(id);
       setTempGrade(null);
+      setIsNotesDrawerOpen(false);
       setState((prev) => ({
         ...prev,
         inputMode: "grade",
@@ -416,6 +409,7 @@ export default function GradeCalculatorView() {
     setEditingGradeId(null);
     setTempGrade(null);
     setWeightBudgetError(null);
+    setIsNotesDrawerOpen(true);
     setState((prev) => ({
       ...prev,
       currentInput: "",
@@ -478,22 +472,83 @@ export default function GradeCalculatorView() {
     if (type === "decimal") {
       return (
         state.inputMode !== "weight" ||
-        state.weightEntryMode !== "decimal" ||
         !GradeCalculatorService.canAddWeightDecimalSeparator(state.currentInput)
       );
     }
     return false;
   };
 
+  const handleRoundedInfoPress = useCallback(() => {
+    Alert.alert(
+      "Nota aproximada",
+      "Es la nota final redondeada al décimo más cercano, siguiendo la regla matemática habitual " +
+        "(desde ,05 hacia arriba sube al siguiente décimo).\n\n" +
+        `Tu nota final exacta es ${weightedAverage.toFixed(2)}, por lo que aproximada queda en ${weightedAverageRounded.toFixed(1)}.`,
+    );
+  }, [weightedAverage, weightedAverageRounded]);
+
+  const handleTruncatedInfoPress = useCallback(() => {
+    Alert.alert(
+      "Nota truncada",
+      "Es la nota final cortada en el primer decimal, sin redondear: todo lo que viene después se descarta.\n\n" +
+        `Tu nota final exacta es ${weightedAverage.toFixed(2)}, por lo que truncada queda en ${weightedAverageTruncated.toFixed(1)}.`,
+    );
+  }, [weightedAverage, weightedAverageTruncated]);
+
+  /* VISTA NOTA FINAL PONDERADA */
   const finalAverageSection = (
     <View style={styles.finalAverageBar}>
       <Text style={styles.finalAverageLabel}>Nota final (ponderada)</Text>
       <GradeGlowValue grade={weightedAverage} style={styles.finalAverageValue}>
         {weightedAverage.toFixed(2)}
       </GradeGlowValue>
-      {state.grades.length > 0 && !weightOkForFinal && (
-        <Text style={styles.finalAverageWarning}>⚠️ Peso ≠ 100%</Text>
-      )}
+      <View style={styles.finalAverageRow}>
+        <View style={styles.finalAverageItem}>
+          <View style={styles.finalAverageSubLabelRow}>
+            <Text style={styles.finalAverageSubLabel}>Aproximada</Text>
+            <TouchableOpacity
+              onPress={handleRoundedInfoPress}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.finalAverageInfoIcon}>?</Text>
+            </TouchableOpacity>
+          </View>
+          <GradeGlowValue
+            grade={weightedAverageRounded}
+            style={styles.finalAverageSubValue}
+            compact
+          >
+            {weightedAverageRounded.toFixed(1)}
+          </GradeGlowValue>
+        </View>
+        <View style={styles.finalAverageItem}>
+          <View style={styles.finalAverageSubLabelRow}>
+            <Text style={styles.finalAverageSubLabel}>Truncada</Text>
+            <TouchableOpacity
+              onPress={handleTruncatedInfoPress}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.finalAverageInfoIcon}>?</Text>
+            </TouchableOpacity>
+          </View>
+          <GradeGlowValue
+            grade={weightedAverageTruncated}
+            style={styles.finalAverageSubValue}
+            compact
+          >
+            {weightedAverageTruncated.toFixed(1)}
+          </GradeGlowValue>
+        </View>
+      </View>
+      <Text
+        style={[
+          styles.finalAverageWarning,
+          !(state.grades.length > 0 && !weightOkForFinal) &&
+            styles.finalAverageWarningHidden,
+        ]}
+      >
+        ⚠️ Peso ≠ 100%
+      </Text>
     </View>
   );
 
@@ -517,7 +572,7 @@ export default function GradeCalculatorView() {
               { fontSize: actionBtnHeight * 0.42 },
             ]}
           >
-            {btn.label}
+            {btn.type === "add" && editingGradeId !== null ? "💾" : btn.label}
           </Text>
         </TouchableOpacity>
       ))}
@@ -533,6 +588,8 @@ export default function GradeCalculatorView() {
       >
         <Text style={styles.notesToggleButtonText}>Notas</Text>
       </TouchableOpacity>
+    ) : !useSplitLayout ? (
+      <View style={styles.notesToggleButtonPlaceholder} />
     ) : null;
 
   const gradesSection = (
@@ -573,7 +630,7 @@ export default function GradeCalculatorView() {
 
         <View style={styles.row}>
           {useSplitLayout ? (
-            showWeightKeypad && state.weightEntryMode === "decimal" ? (
+            showWeightKeypad ? (
               <>
                 <GradeButton
                   label="0"
@@ -600,7 +657,7 @@ export default function GradeCalculatorView() {
                   disabled={false}
                 />
               </>
-            ) : showWeightKeypad ? (
+            ) : (
               <>
                 <GradeButton
                   label="0"
@@ -610,6 +667,7 @@ export default function GradeCalculatorView() {
                   onPress={() => handlePress("0", "number")}
                   disabled={isButtonDisabled("0", "number")}
                 />
+                <View style={{ width: keySize + keyGap, height: keySize + keyGap }} />
                 <GradeButton
                   label="←"
                   type="delete"
@@ -619,17 +677,8 @@ export default function GradeCalculatorView() {
                   disabled={false}
                 />
               </>
-            ) : (
-              <GradeButton
-                label="←"
-                type="delete"
-                size={keySize}
-                gap={keyGap}
-                onPress={() => handlePress("delete", "delete")}
-                disabled={false}
-              />
             )
-          ) : showWeightKeypad && state.weightEntryMode === "decimal" ? (
+          ) : (
             <>
               <GradeButton
                 label="0"
@@ -637,6 +686,7 @@ export default function GradeCalculatorView() {
                 size={keySize}
                 gap={keyGap}
                 square
+                span={2}
                 onPress={() => handlePress("0", "number")}
                 disabled={isButtonDisabled("0", "number")}
               />
@@ -649,39 +699,6 @@ export default function GradeCalculatorView() {
                 onPress={() => handlePress(".", "decimal")}
                 disabled={isButtonDisabled(".", "decimal")}
               />
-              <View
-                style={{ width: keySize + keyGap, height: keySize + keyGap }}
-              />
-            </>
-          ) : showWeightKeypad ? (
-            <>
-              <GradeButton
-                label="0"
-                type="number"
-                size={keySize}
-                gap={keyGap}
-                square
-                onPress={() => handlePress("0", "number")}
-                disabled={isButtonDisabled("0", "number")}
-              />
-              <View
-                style={{ width: keySize + keyGap, height: keySize + keyGap }}
-              />
-              <View
-                style={{ width: keySize + keyGap, height: keySize + keyGap }}
-              />
-            </>
-          ) : (
-            <>
-              <View
-                style={{ width: keySize + keyGap, height: keySize + keyGap }}
-              />
-              <View
-                style={{ width: keySize + keyGap, height: keySize + keyGap }}
-              />
-              <View
-                style={{ width: keySize + keyGap, height: keySize + keyGap }}
-              />
             </>
           )}
         </View>
@@ -692,9 +709,9 @@ export default function GradeCalculatorView() {
   const displayInputSection = (
     <>
       <GradeDisplay
-        value={displayInput}
-        mode={state.inputMode}
-        placeholder={state.inputMode === "grade" ? "0.0" : "0"}
+        gradeValue={gradeColumnValue}
+        weightValue={weightColumnValue}
+        activeColumn={state.inputMode}
         weightEntryMode={
           state.inputMode === "weight" ? state.weightEntryMode : undefined
         }
@@ -710,82 +727,98 @@ export default function GradeCalculatorView() {
         </View>
       )}
 
-      {tempGrade !== null && (
-        <View style={styles.tempGradeContainer}>
-          <View style={styles.tempGradeRow}>
-            {editingGradeId !== null && (
-              <Text style={styles.editingBadge}>Editando</Text>
-            )}
-            <Text style={styles.tempGradeLabel}>Nota:</Text>
-            <Text style={styles.tempGradeValue}>{tempGrade.toFixed(1)}</Text>
-          </View>
-          {editingGradeId !== null && (
-            <TouchableOpacity
-              onPress={handleCancelEdit}
-              style={styles.cancelEditBtn}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityLabel="Cancelar edición"
-            >
-              <Text style={styles.cancelEditText}>Cancelar</Text>
-            </TouchableOpacity>
-          )}
+      {editingGradeId !== null && (
+        <View style={styles.editingRow}>
+          <Text style={styles.editingBadge}>Editando</Text>
+          <TouchableOpacity
+            onPress={handleCancelEdit}
+            style={styles.cancelEditBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Cancelar edición"
+          >
+            <Text style={styles.cancelEditText}>Cancelar</Text>
+          </TouchableOpacity>
         </View>
       )}
 
-      {showWeightModeToggle && (
-        <View style={styles.weightModeRow}>
-          <TouchableOpacity
-            style={[
-              styles.weightModeChip,
-              state.weightEntryMode === "integer" &&
-                styles.weightModeChipActive,
-            ]}
-            onPress={() => setWeightEntryMode("integer")}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.weightModeChipText,
-                state.weightEntryMode === "integer" &&
-                  styles.weightModeChipTextActive,
-              ]}
-            >
-              Enteros
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.weightModeChip,
-              state.weightEntryMode === "decimal" &&
-                styles.weightModeChipActive,
-            ]}
-            onPress={() => setWeightEntryMode("decimal")}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.weightModeChipText,
-                state.weightEntryMode === "decimal" &&
-                  styles.weightModeChipTextActive,
-              ]}
-            >
-              Con decimal
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <View style={styles.weightModeRowPlaceholder} />
     </>
   );
 
   const mobileTopSection = (
     <View style={styles.mobileTopSection}>
       {finalAverageSection}
-      <View style={styles.calculatorPanel}>{notesButtonSection}</View>
+      {notesButtonSection}
     </View>
   );
 
   const mobileEntrySection = (
     <View style={styles.calculatorPanel}>{displayInputSection}</View>
+  );
+
+  const mobileKeypadSection = (
+    <View style={styles.mobileKeypadContainer}>
+      <View style={styles.mobileKeyRow}>
+        <GradeButton
+          label={editingGradeId !== null ? "💾" : "+"}
+          type="add"
+          fill
+          gap={8}
+          onPress={() => handlePress("add", "add")}
+          disabled={false}
+        />
+        <GradeButton
+          label="?"
+          type="help"
+          fill
+          gap={8}
+          onPress={() => handlePress("help", "help")}
+          disabled={false}
+        />
+        <GradeButton
+          label="←"
+          type="delete"
+          fill
+          gap={8}
+          onPress={() => handlePress("delete", "delete")}
+          disabled={false}
+        />
+      </View>
+      {GRADE_NUMERIC_ROWS.map((row, rowIndex) => (
+        <View key={rowIndex} style={styles.mobileKeyRow}>
+          {row.map((btn) => (
+            <GradeButton
+              key={btn.value}
+              label={btn.label}
+              type={btn.type}
+              fill
+              gap={8}
+              onPress={() => handlePress(btn.value, btn.type)}
+              disabled={isButtonDisabled(btn.value, btn.type)}
+            />
+          ))}
+        </View>
+      ))}
+      <View style={styles.mobileKeyRow}>
+        <GradeButton
+          label="0"
+          type="number"
+          fill
+          span={2}
+          gap={8}
+          onPress={() => handlePress("0", "number")}
+          disabled={isButtonDisabled("0", "number")}
+        />
+        <GradeButton
+          label=","
+          type="decimal"
+          fill
+          gap={8}
+          onPress={() => handlePress(".", "decimal")}
+          disabled={isButtonDisabled(".", "decimal")}
+        />
+      </View>
+    </View>
   );
 
   const mobileDrawerSection = (
@@ -821,41 +854,6 @@ export default function GradeCalculatorView() {
     </Modal>
   );
 
-  const mobileKeypadSection = (
-    <View style={[styles.splitRow, styles.stackedSection]}>
-      <View style={styles.actionRowMobileTop}>
-        <GradeButton
-          label="+"
-          type="add"
-          size={keySize}
-          gap={keyGap}
-          square
-          onPress={() => handlePress("add", "add")}
-          disabled={false}
-        />
-        <GradeButton
-          label="?"
-          type="help"
-          size={keySize}
-          gap={keyGap}
-          square
-          onPress={() => handlePress("help", "help")}
-          disabled={false}
-        />
-        <GradeButton
-          label="←"
-          type="delete"
-          size={keySize}
-          gap={keyGap}
-          square
-          onPress={() => handlePress("delete", "delete")}
-          disabled={false}
-        />
-      </View>
-      {keyboardSection}
-    </View>
-  );
-
   return (
     <SafeAreaView
       style={styles.safe}
@@ -888,6 +886,7 @@ export default function GradeCalculatorView() {
 }
 
 const styles = StyleSheet.create({
+  /* ESTILOS BASE DE PANTALLA */
   safe: {
     flex: 1,
     backgroundColor: "#000000",
@@ -896,12 +895,87 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
   },
+
+  /* ESTILOS VISTA NOTA FINAL */
+  finalAverageBar: {
+    flexShrink: 0,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    marginTop: 2,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 40,
+    backgroundColor: "#1565C0",
+    alignItems: "center",
+  },
+  finalAverageLabel: {
+    ...fontApp,
+    color: "#E3F2FD",
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  finalAverageValue: {
+    ...fontApp,
+    color: "#FFFFFF",
+    fontSize: 32,
+  },
+  finalAverageRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 24,
+    marginTop: 4,
+  },
+  finalAverageItem: {
+    alignItems: "center",
+  },
+  finalAverageSubLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 2,
+  },
+  finalAverageSubLabel: {
+    ...fontApp,
+    color: "#E3F2FD",
+    fontSize: 11,
+  },
+  finalAverageInfoIcon: {
+    ...fontApp,
+    color: "#E3F2FD",
+    fontSize: 11,
+    width: 14,
+    height: 14,
+    lineHeight: 14,
+    textAlign: "center",
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: "#E3F2FD",
+    overflow: "hidden",
+  },
+  finalAverageSubValue: {
+    ...fontApp,
+    fontSize: 18,
+  },
+  finalAverageWarning: {
+    ...fontApp,
+    color: "#FFEB3B",
+    fontSize: 12,
+    marginTop: 6,
+    textAlign: "center",
+  },
+  finalAverageWarningHidden: {
+    opacity: 0,
+  },
+
+  /* ESTILOS VISTA NOTA ACTUAL */
   calculatorPanel: {
     flexShrink: 0,
     paddingHorizontal: 16,
     paddingTop: 2,
     paddingBottom: 4,
+    backgroundColor: "#000000",
   },
+
   weightBudgetErrorBanner: {
     marginTop: 4,
     marginBottom: 2,
@@ -924,21 +998,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
   },
-  tempGradeContainer: {
+  editingRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: "#2196F3",
-    borderRadius: 6,
+    paddingVertical: 4,
     marginBottom: 4,
     marginTop: 2,
-  },
-  tempGradeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexShrink: 1,
   },
   editingBadge: {
     ...fontApp,
@@ -962,44 +1028,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textDecorationLine: "underline",
   },
-  tempGradeLabel: {
-    ...fontApp,
-    color: "#FFFFFF",
-    fontSize: 13,
-    marginRight: 6,
+  weightModeRowPlaceholder: {
+    minHeight: 38,
+    marginBottom: 8,
+    marginTop: 4,
   },
-  tempGradeValue: {
-    ...fontApp,
-    color: "#FFFFFF",
-    fontSize: 18,
-  },
-  weightModeRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginBottom: 4,
-    marginTop: 2,
-  },
-  weightModeChip: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginHorizontal: 4,
-    borderRadius: 16,
-    backgroundColor: "#2a2a2a",
-    borderWidth: 1,
-    borderColor: "#444444",
-  },
-  weightModeChipActive: {
-    backgroundColor: "#1565C0",
-    borderColor: "#42A5F5",
-  },
-  weightModeChipText: {
-    ...fontApp,
-    color: "#AAAAAA",
-    fontSize: 12,
-  },
-  weightModeChipTextActive: {
-    color: "#FFFFFF",
-  },
+  /* ESTILOS BOTONES DE ACCIÓN */
   actionRow: {
     flexDirection: "row",
     justifyContent: "center",
@@ -1008,24 +1042,24 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     marginTop: 2,
   },
-  actionRowMobileTop: {
+  actionRowMobileBottom: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 2,
+    marginBottom: 0,
+    paddingHorizontal: 0,
   },
-  notesToggleButton: {
-    alignSelf: "center",
-    backgroundColor: "#2a6bc7",
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    marginTop: 2,
+  mobileKeypadContainer: {
+    flex: 1,
+    flexDirection: "column",
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    paddingTop: 8,
   },
-  notesToggleButtonText: {
-    ...fontApp,
-    color: "#FFFFFF",
-    fontSize: 13,
+  mobileKeyRow: {
+    flex: 1,
+    flexDirection: "row",
+    minHeight: 48,
   },
   actionButton: {
     borderRadius: 22,
@@ -1047,20 +1081,7 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     ...fontApp,
-    color: "#FFFFFF",
-  },
-  keyboardContainer: {
-    alignSelf: "stretch",
-    width: "100%",
-    alignItems: "center",
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    alignSelf: "stretch",
-    width: "100%",
-    marginBottom: 0,
+    color: "#ffffff",
   },
   splitRow: {
     flex: 1,
@@ -1079,6 +1100,11 @@ const styles = StyleSheet.create({
   mobileTopSection: {
     flexShrink: 0,
   },
+  mobileBottomKeyboard: {
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    justifyContent: "flex-end",
+  },
   keyboardColumn: {
     flex: 1,
     minWidth: 0,
@@ -1091,8 +1117,23 @@ const styles = StyleSheet.create({
   },
   keyboardColumnStacked: {
     borderRightWidth: 0,
-    marginBottom: 8,
+    marginBottom: 4,
   },
+  keyboardContainer: {
+    alignSelf: "stretch",
+    width: "100%",
+    alignItems: "center",
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "stretch",
+    width: "100%",
+    marginBottom: 0,
+  },
+
+  /* ESTILOS CAJÓN NOTAS INGRESADAS */
   gradesColumn: {
     flex: 1,
     minWidth: 0,
@@ -1101,6 +1142,25 @@ const styles = StyleSheet.create({
   gradesColumnStacked: {
     flex: 0,
     minHeight: 180,
+  },
+  notesToggleButton: {
+    alignSelf: "center",
+    backgroundColor: "#2a6bc7",
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginTop: 0,
+    marginBottom: 6,
+  },
+  notesToggleButtonText: {
+    ...fontApp,
+    color: "#FFFFFF",
+    fontSize: 13,
+  },
+  notesToggleButtonPlaceholder: {
+    alignSelf: "center",
+    height: 34,
+    marginBottom: 6,
   },
   drawerBackdrop: {
     flex: 1,
@@ -1139,34 +1199,5 @@ const styles = StyleSheet.create({
     ...fontApp,
     color: "#FFFFFF",
     fontSize: 12,
-  },
-  finalAverageBar: {
-    flexShrink: 0,
-    marginHorizontal: 16,
-    marginBottom: 8,
-    marginTop: 2,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    backgroundColor: "#1565C0",
-    alignItems: "center",
-  },
-  finalAverageLabel: {
-    ...fontApp,
-    color: "#E3F2FD",
-    fontSize: 13,
-    marginBottom: 4,
-  },
-  finalAverageValue: {
-    ...fontApp,
-    color: "#FFFFFF",
-    fontSize: 32,
-  },
-  finalAverageWarning: {
-    ...fontApp,
-    color: "#FFEB3B",
-    fontSize: 12,
-    marginTop: 6,
-    textAlign: "center",
   },
 });

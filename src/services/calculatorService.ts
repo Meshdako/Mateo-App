@@ -1,6 +1,7 @@
 import { Grade, WeightEntryMode } from '../interfaces';
 
 function canAddWeightIntegerDigit(buffer: string, digit: string): boolean {
+  if (buffer.length === 0 && digit === '0') return false;
   if (buffer.length >= 3) return false;
   const next = buffer + digit;
   const n = parseInt(next, 10);
@@ -14,8 +15,10 @@ function canAddWeightDecimalDigit(buffer: string, digit: string): boolean {
     const parts = buffer.split('.');
     const frac = parts[1] ?? '';
     if (frac.length >= 1) return false;
-    return /^[0-9]$/.test(digit);
+    // El decimal no puede ser 0 (equivaldría al mismo % entero).
+    return /^[1-9]$/.test(digit);
   }
+  if (buffer.length === 0 && digit === '0') return false;
   if (buffer.length >= 3) return false;
   const next = buffer + digit;
   const n = parseInt(next, 10);
@@ -30,19 +33,20 @@ function canAddWeightDecimalDigit(buffer: string, digit: string): boolean {
 export const GradeCalculatorService = {
   /**
    * Nota sin tecla coma: buffer "5" → 5.0, "58" → 5.8 (máx. 2 caracteres sin punto).
-   * Peso: según weightEntryMode (enteros o un decimal, p. ej. 25,5).
+   * Peso: se ingresa siempre como entero (ej. 40); si el buffer ya tiene coma
+   * (ej. "40.") se permite un único dígito decimal distinto de 0 (ej. 40,5).
    */
   canAddNumber: (
     currentInput: string,
     number: string,
     inputMode: 'grade' | 'weight',
-    weightEntryMode: WeightEntryMode = 'integer'
+    _weightEntryMode?: WeightEntryMode
   ): boolean => {
     if (inputMode === 'weight') {
-      if (weightEntryMode === 'integer') {
-        return canAddWeightIntegerDigit(currentInput, number);
+      if (currentInput.includes('.')) {
+        return canAddWeightDecimalDigit(currentInput, number);
       }
-      return canAddWeightDecimalDigit(currentInput, number);
+      return canAddWeightIntegerDigit(currentInput, number);
     }
 
     if (number === '0') return false;
@@ -86,11 +90,11 @@ export const GradeCalculatorService = {
   },
 
   /**
-   * Parsea peso según modo (enteros o hasta un decimal, ej. 25,5).
+   * Parsea el peso ingresado (entero, o con un decimal si el buffer trae coma, ej. 25,5).
    */
-  parseWeightInput: (buffer: string, weightEntryMode: WeightEntryMode): number | null => {
+  parseWeightInput: (buffer: string, _weightEntryMode?: WeightEntryMode): number | null => {
     if (!buffer) return null;
-    if (weightEntryMode === 'integer') {
+    if (!buffer.includes('.')) {
       const n = parseInt(buffer, 10);
       return Number.isNaN(n) ? null : n;
     }
@@ -170,6 +174,16 @@ export const GradeCalculatorService = {
 
   formatDisplay: (value: number): string => {
     return value.toFixed(1);
+  },
+
+  /** NFP aproximada: redondeo convencional a 1 decimal (3,95 → 4,0). */
+  roundWeightedAverage: (value: number): number => {
+    return Math.round(value * 10) / 10;
+  },
+
+  /** NFP truncada: se corta el decimal sin redondear (3,95 → 3,9). */
+  truncateWeightedAverage: (value: number): number => {
+    return Math.trunc(value * 10) / 10;
   },
 
   /** Buffer de teclas de nota (ej. 5.1 → "51", 7.0 → "7"). */
